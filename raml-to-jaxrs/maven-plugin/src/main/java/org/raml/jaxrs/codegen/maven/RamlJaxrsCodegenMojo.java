@@ -36,7 +36,7 @@ import org.apache.maven.project.MavenProject;
 import org.jsonschema2pojo.AnnotationStyle;
 import org.raml.jaxrs.codegen.core.Configuration;
 import org.raml.jaxrs.codegen.core.Configuration.JaxrsVersion;
-import org.raml.jaxrs.codegen.core.Generator;
+import org.raml.jaxrs.codegen.core.GeneratorProxy;
 import org.raml.jaxrs.codegen.core.ext.GeneratorExtension;
 
 /**
@@ -210,7 +210,7 @@ public class RamlJaxrsCodegenMojo extends AbstractMojo {
 		File currentSourcePath = null;
 
 		try {
-			final Generator generator = new Generator();
+			final GeneratorProxy generator = new GeneratorProxy();
 
 			for (final File ramlFile : getRamlFiles()) {
 				getLog().info("Generating Java classes from: " + ramlFile);
