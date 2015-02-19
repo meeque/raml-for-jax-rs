@@ -90,6 +90,10 @@ class Context
     private JDefinedClass currentResourceInterface;
     private final File globalSchemaStore;
 
+    public JCodeModel getCodeModel(){
+    	return codeModel;
+    }
+
     public JType ref(String name){
     	return codeModel.ref(name);
     }
