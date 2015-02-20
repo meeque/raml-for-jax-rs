@@ -39,7 +39,6 @@ import com.sun.codemodel.JMethod;
 import com.sun.codemodel.JMod;
 import com.sun.codemodel.JPackage;
 import com.sun.codemodel.JType;
-import com.sun.codemodel.JVar;
 
 public class ClientGenerator extends AbstractGenerator {
 
