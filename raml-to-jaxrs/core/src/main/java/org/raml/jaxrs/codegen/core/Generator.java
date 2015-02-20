@@ -21,41 +21,24 @@ import static org.apache.commons.lang.StringUtils.capitalize;
 import static org.apache.commons.lang.StringUtils.defaultString;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.apache.commons.lang.StringUtils.strip;
-import static org.apache.commons.lang.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 import static org.raml.jaxrs.codegen.core.Constants.RESPONSE_HEADER_WILDCARD_SYMBOL;
 import static org.raml.jaxrs.codegen.core.Names.EXAMPLE_PREFIX;
 import static org.raml.jaxrs.codegen.core.Names.GENERIC_PAYLOAD_ARGUMENT_NAME;
 import static org.raml.jaxrs.codegen.core.Names.MULTIPLE_RESPONSE_HEADERS_ARGUMENT_NAME;
 
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.math.BigDecimal;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
-import javax.mail.internet.MimeMultipart;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.math.NumberUtils;
 import org.raml.jaxrs.codegen.core.ext.GeneratorExtension;
 import org.raml.model.Action;
@@ -63,14 +46,10 @@ import org.raml.model.MimeType;
 import org.raml.model.Raml;
 import org.raml.model.Resource;
 import org.raml.model.Response;
+import org.raml.model.Template;
 import org.raml.model.parameter.AbstractParam;
-import org.raml.model.parameter.FormParameter;
 import org.raml.model.parameter.Header;
-import org.raml.model.parameter.QueryParameter;
-import org.raml.model.parameter.UriParameter;
 
-import com.sun.codemodel.JAnnotationArrayMember;
-import com.sun.codemodel.JAnnotationUse;
 import com.sun.codemodel.JBlock;
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JDefinedClass;
@@ -145,6 +124,11 @@ public class Generator extends AbstractGenerator
 
         final JDocComment javadoc = addBaseJavaDoc(action, method);
 
+        final Map<String, JType> templateParameterTypes = getTemplateParameterClasses(resourceInterface, action);
+        for (final Entry<String, JType> templateParameterType : templateParameterTypes.entrySet()) {
+			method.param(templateParameterType.getValue(), templateParameterType.getKey());
+		}
+        
         addPathParameters(action, method, javadoc);
         addHeaderParameters(action, method, javadoc);
         addQueryParameters(action, method, javadoc);
@@ -157,8 +141,66 @@ public class Generator extends AbstractGenerator
         for (GeneratorExtension e : extensions) {
         	e.onAddResourceMethod(method, action, bodyMimeType, uniqueResponseMimeTypes);
         }
-     
+    }
 
+    protected Map<String, AbstractParam> getAllParameters(Action action) {
+
+        final Map<String, AbstractParam> parameters = new LinkedHashMap<String, AbstractParam>();
+
+        for ( final Entry<String, Header> header : action.getHeaders().entrySet() )
+        {
+    		parameters.put(header.getKey(), header.getValue());
+        }
+        
+        // TODO collect other types of params (url, etc)
+        
+        return parameters;
+	}
+
+	protected Map<String, JType> getTemplateParameterClasses(final JDefinedClass resourceInterface,
+                                   final Action action) throws Exception
+    {
+    	final Map<String, JType> templateParameters = new LinkedHashMap<String, JType>();
+    	
+    	final String resourceTypeName = action.getResource().getType();
+    	final Set<String> traitNames = new LinkedHashSet<String>();
+    	traitNames.addAll(action.getResource().getIs());
+    	traitNames.addAll(action.getIs());
+    	
+    	// TODO this is global for the whole raml, so stash it in the context or something
+    	final Map<String, Template> availableResourceTypes = flattenTemplates(context.getRaml().getResourceTypes());
+    	final Map<String, Template> availableTraits = flattenTemplates(context.getRaml().getTraits());
+    	
+    	final Template resourceType = availableResourceTypes.get(resourceTypeName);
+    	if(resourceType != null)
+    	{
+    		templateParameters.put(
+    				Names.buildVariableName(resourceTypeName),
+    				createTemplateParameterClass(resourceTypeName, resourceType, false));
+    	}
+    	
+    	final Map<String, Template> traits = new LinkedHashMap<String, Template>(availableTraits);
+    	traits.keySet().retainAll(traitNames);
+    	for(final Entry<String, Template> trait : traits.entrySet())
+    	{
+    		templateParameters.put(
+    				Names.buildVariableName(trait.getKey()),
+    				createTemplateParameterClass(trait.getKey(), trait.getValue(), true));
+    	}
+    	
+    	return templateParameters;
+    }
+	
+    /**
+     * 
+     */
+    private static Map<String, Template> flattenTemplates(final List<Map<String, Template>> templates)
+    {
+    	final Map<String, Template> flattenedTemplates = new LinkedHashMap<String, Template>();
+    	for (Map<String, Template> template : templates) {
+			flattenedTemplates.putAll(template);
+		}
+    	return flattenedTemplates;
     }
 
     private JType getResourceMethodReturnType(final String methodName,

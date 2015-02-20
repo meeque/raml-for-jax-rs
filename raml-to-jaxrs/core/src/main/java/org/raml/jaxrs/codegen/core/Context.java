@@ -94,10 +94,15 @@ class Context
     	return codeModel;
     }
 
-    public JType ref(String name){
-    	return codeModel.ref(name);
+    public Raml getRaml(){
+    	return raml;
     }
-    
+
+    public JClass getGeneratorClass(final String clazzFQN)
+    {
+          return codeModel.ref(clazzFQN);
+    }
+
     public Context(final Configuration configuration, final Raml raml) throws IOException
     {
         Validate.notNull(configuration, "configuration can't be null");
@@ -279,10 +284,6 @@ class Context
         }
 
         return _enum;
-    }
-    public JClass getGeneratorClass(final String clazzFQN)
-    {
-          return codeModel.ref(clazzFQN);
     }
 
     @SuppressWarnings("unchecked")

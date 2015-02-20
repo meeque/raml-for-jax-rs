@@ -24,7 +24,6 @@ import org.apache.commons.lang.StringUtils;
 import org.jsonschema2pojo.AnnotationStyle;
 import org.jsonschema2pojo.DefaultGenerationConfig;
 import org.jsonschema2pojo.GenerationConfig;
-import org.raml.jaxrs.codegen.core.ext.AbstractGeneratorExtension;
 import org.raml.jaxrs.codegen.core.ext.GeneratorExtension;
 
 public class Configuration
@@ -64,7 +63,7 @@ public class Configuration
     private boolean useJsr303Annotations = false;
     private AnnotationStyle jsonMapper = AnnotationStyle.JACKSON1;
     private File sourceDirectory;
-    private Class methodThrowException = Exception.class;
+    private Class<? extends Throwable> methodThrowException = Exception.class;
     private Map<String, String> jsonMapperConfiguration;
     private String asyncResourceTrait;
 	private boolean emptyResponseReturnVoid;
@@ -194,11 +193,11 @@ public class Configuration
         this.jsonMapper = jsonMapper;
     }
     
-    public Class getMethodThrowException() {
+    public Class<? extends Throwable> getMethodThrowException() {
         return methodThrowException;
     }
     
-    public void setMethodThrowException(Class methodThrowException) {
+    public void setMethodThrowException(Class<? extends Throwable> methodThrowException) {
         this.methodThrowException = methodThrowException;
     }
 

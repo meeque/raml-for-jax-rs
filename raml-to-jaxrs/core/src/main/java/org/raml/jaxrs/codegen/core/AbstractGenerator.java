@@ -64,6 +64,7 @@ import org.raml.model.MimeType;
 import org.raml.model.Raml;
 import org.raml.model.Resource;
 import org.raml.model.Response;
+import org.raml.model.Template;
 import org.raml.model.parameter.AbstractParam;
 import org.raml.model.parameter.FormParameter;
 import org.raml.model.parameter.Header;
@@ -87,6 +88,7 @@ import com.sun.codemodel.JAnnotationUse;
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JDocComment;
+import com.sun.codemodel.JFieldVar;
 import com.sun.codemodel.JMethod;
 import com.sun.codemodel.JType;
 import com.sun.codemodel.JVar;
@@ -453,6 +455,43 @@ public abstract class AbstractGenerator {
 		}
 
 		addParameterJavaDoc(parameter, argumentVariable.name(), javadoc);
+	}
+
+	protected JType createTemplateParameterClass(final String name, final Template template, final boolean isTrait) throws Exception
+	{
+
+		final JClass existingClass = types.getExistingTemplateClass(name, isTrait);
+		if (existingClass != null)
+		{
+			return existingClass;
+		}
+
+		final String packageName = context.getConfiguration().getBasePackageName() + (isTrait ? ".trait" : ".resourcetype");
+		final JDefinedClass templateParameterClass = context.getCodeModel()._package(packageName)._class(Names.buildJavaFriendlyName(name));
+		
+		for(final Entry<String, Header> header : template.getHeaders().entrySet())
+        {
+			final String headerName = header.getKey();
+			final Header headerParam = header.getValue();
+			
+			final JFieldVar headerField = templateParameterClass.field(0, types.buildParameterType(headerParam, headerName), Names.buildVariableName(headerName));
+
+			//headerField.annotate(annotationClass).param(DEFAULT_ANNOTATION_PARAMETER, name);
+
+        	if (headerParam.getDefaultValue() != null)
+        	{
+        		headerField.annotate(DefaultValue.class).param(DEFAULT_ANNOTATION_PARAMETER, headerParam.getDefaultValue());
+        	}
+
+        	if (context.getConfiguration().isUseJsr303Annotations()) {
+        		addJsr303Annotations(headerParam, headerField);
+        	}
+        	// TODO add JavaDoc
+        }
+        
+		types.registerExistingTemplateClass(name, templateParameterClass, isTrait);
+        // TODO collect other types of params (url, etc)
+		return templateParameterClass;
 	}
 
 	private void addJsr303Annotations(final AbstractParam parameter,

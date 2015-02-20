@@ -62,6 +62,7 @@ public class Types
 
     private final Context context;
     private final Map<String, JClass> schemaClasses;
+    private final Map<String, JClass> templateClasses;
 
     public Types(final Context context)
     {
@@ -70,6 +71,7 @@ public class Types
         this.context = context;
 
         schemaClasses = new HashMap<String, JClass>();
+        templateClasses = new HashMap<String, JClass>();
     }
 
     public JType buildParameterType(final AbstractParam parameter, final String name) throws Exception
@@ -191,6 +193,21 @@ public class Types
         }
     }
 
+    public JClass getExistingTemplateClass(final String name, final boolean isTrait)
+    {
+    	return templateClasses.get(buildTemplateKey(name, isTrait));
+    }
+
+    public void registerExistingTemplateClass(final String name, JClass templateClass, final boolean isTrait)
+    {
+    	templateClasses.put(buildTemplateKey(name, isTrait), templateClass);
+    }
+
+    private String buildTemplateKey(final String name, final boolean isTrait)
+    {
+    	return (isTrait ? "trait." : "resource~Type.") + name; 
+    }
+    
     private boolean isCompatibleWith(final MimeType mt, final String... mediaTypes)
     {
         final String mimeType = mt.getType();
